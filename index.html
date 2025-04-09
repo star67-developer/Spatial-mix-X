@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Mix - Web Player</title>
+    <style>
+        :root {
+            --primary: #9c5eeb;
+            --primary-dark: #7b40c9;
+            --dark: #121220;
+            --darker: #0c0c14;
+            --light-text: #ffffff;
+            --gray-text: #aaaaaa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(180deg, var(--dark) 0%, var(--darker) 100%);
+            min-height: 100vh;
+            color: var(--light-text);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, var(--dark) 0%, var(--darker) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+        
+        .login-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .login-box {
+            background: rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .login-title {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--primary), #a679ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .login-subtitle {
+            font-size: 16px;
+            color: var(--gray-text);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            color: var(--gray-text);
+        }
+        
+        .form-input {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .error-message {
+            color: #ff4d4d;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .login-btn {
+            margin-top: 10px;
+            padding: 12px 15px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .login-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .demo-btn {
+            background: none;
+            border: none;
+            color: var(--gray-text);
+            font-size: 14px;
+            margin-top: 15px;
+            cursor: pointer;
+            text-align: center;
+            width: 100%;
+            transition: color 0.3s;
+        }
+        
+        .demo-btn:hover {
+            color: var(--light-text);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(90deg, var(--primary), #a679ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .logout-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 6px;
+            color: var(--light-text);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        
+        .upload-zone:hover, .upload-zone.drag-active {
+            border-color: var(--primary);
+            background: rgba(156, 94, 235, 0.05);
+        }
+        
+        .upload-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+            opacity: 0.7;
+        }
+        
+        .upload-text {
+            font-size: 14px;
+            color: var(--gray-text);
+            margin-bottom: 10px;
+        }
+        
+        .upload-format {
+            font-size: 12px;
+            color: var(--gray-text);
+            opacity: 0.7;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .upload-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .track-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .track-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .track-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .track-item.active {
+            background: rgba(156, 94, 235, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .track-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .track-info {
+            font-size: 12px;
+            color: var(--gray-text);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .player-container {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .now-playing {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .now-playing-label {
+            font-size: 14px;
+            color: var(--gray-text);
+            margin-bottom: 10px;
+        }
+        
+        .playing-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .playing-info {
+            font-size: 16px;
+            color: var(--gray-text);
+        }
+        
+        .visualization {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            margin-bottom: 40px;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .vis-labels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .vis-label {
+            position: absolute;
+            font-size: 14px;
+            color: var(--primary);
+            opacity: 0.8;
+        }
+        
+        .vis-front {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .vis-back {
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .vis-left {
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .vis-right {
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .position-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: move;
+            box-shadow: 0 0 10px rgba(156, 94, 235, 0.5);
+        }
+        
+        .controls-container {
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .progress-container {
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            width: 0%;
+        }
+        
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: var(--gray-text);
+            font-size: 14px;
+        }
+        
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .control-btn {
+            background: none;
+            border: none;
+            color: var(--light-text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        .control-btn:hover {
+            opacity: 1;
+        }
+        
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, background 0.3s;
+        }
+        
+        .play-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+        
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .option-label {
+            font-size: 16px;
+        }
+        
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            color: var(--light-text);
+        }
+        
+        .error-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 77, 77, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2001;
+            display: none;
+        }
+        
+        .success-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 213, 115, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2001;
+            display: none;
+        }
+        
+        .coordinates-display {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: var(--gray-text);
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+            
+            .visualization {
+                width: 250px;
+                height: 250px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .player-controls {
+                gap: 15px;
+            }
+            
+            .visualization {
+                width: 200px;
+                height: 200px;
+            }
+        }
+        
+        .instruction-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .instruction-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .instruction-content {
+            background: var(--dark);
+            max-width: 500px;
+            width: 90%;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .instruction-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .instruction-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .instruction-list {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .instruction-list li {
+            margin-bottom: 10px;
+        }
+        
+        .close-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .close-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .mobile-warning {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 77, 77, 0.1);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-warning {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1 class="login-title">SPATIAL MIX</h1>
+            <p class="login-subtitle">Client Access Portal</p>
+            
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-input" placeholder="Enter your username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="Enter your password">
+                </div>
+                
+                <p class="error-message" id="loginError">Invalid username or password</p>
+                
+                <button type="submit" class="login-btn">Login</button>
+                <button type="button" class="demo-btn" id="demoLoginBtn">Use Demo Account</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Main App -->
+    <header class="header">
+        <h1 class="logo">SPATIAL MIX</h1>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+    
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2 class="sidebar-title">Track Library</h2>
+            
+            <!-- Upload Area -->
+            <div class="upload-zone" id="uploadZone">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-text">Drag & drop your audio file</p>
+                <p class="upload-format">MP3, WAV, M4A files</p>
+                <button class="upload-btn" id="uploadBtn">Select File</button>
+            </div>
+            <input type="file" id="fileInput" class="file-input" accept="audio/*">
+            
+            <!-- Track List -->
+            <div class="track-list" id="trackList">
+                <div class="track-item">
+                    <p class="track-title">Demo Track: Urban Ambience</p>
+                    <div class="track-info">
+                        <span>Spatial Demo</span>
+                        <span>3:05</span>
+                    </div>
+                </div>
+                <div class="track-item">
+                    <p class="track-title">Demo Track: Forest Environment</p>
+                    <div class="track-info">
+                        <span>Spatial Demo</span>
+                        <span>2:42</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player -->
+        <div class="player-container">
+            <div class="now-playing">
+                <p class="now-playing-label">NOW PLAYING</p>
+                <h2 class="playing-title" id="currentTrackTitle">Select a track to play</h2>
+                <p class="playing-info" id="currentTrackInfo">-</p>
+            </div>
+            
+            <!-- Visualization Area -->
+            <div class="visualization">
+                <canvas id="visualizerCanvas"></canvas>
+                <div class="vis-labels">
+                    <div class="vis-label vis-front">F</div>
+                    <div class="vis-label vis-back">B</div>
+                    <div class="vis-label vis-left">L</div>
+                    <div class="vis-label vis-right">R</div>
+                </div>
+                <div class="position-marker" id="positionMarker"></div>
+                <div class="coordinates-display" id="coordinates">X: 0.00, Y: 0.00</div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls-container">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+                
+                <div class="player-controls">
+                    <button class="control-btn" id="prevBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                            <line x1="5" y1="19" x2="5" y2="5"></line>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-btn play-btn" id="playBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="playIcon">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="pauseIcon" class="hidden">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-btn" id="nextBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                            <line x1="19" y1="5" x2="19" y2="19"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="options-container">
+                    <div class="option-item">
+                        <span class="option-label">Spatial Audio</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="spatialToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="option-item volume-container">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="volumeIcon">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                        </svg>
+                        <input type="range" min="0" max="1" step="0.01" value="0.7" class="volume-slider" id="volumeSlider">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mobile-warning">
+                <p>⚠️ For the best spatial audio experience, please use headphones and a desktop browser.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p class="loading-text">Processing audio...</p>
+    </div>
+    
+    <!-- Notifications -->
+    <div class="error-notification" id="errorNotification">An error occurred while processing the audio file.</div>
+    <div class="success-notification" id="successNotification">Audio file loaded successfully!</div>
+    
+    <!-- Instructions Overlay -->
+    <div class="instruction-overlay active" id="instructionOverlay">
+        <div class="instruction-content">
+            <h2 class="instruction-title">Welcome to Spatial Mix!</h2>
+            <p class="instruction-text">This web player allows you to experience your audio files with spatial audio effects. Here's how to use it:</p>
+            
+            <ul class="instruction-list">
+                <li><strong>Upload audio files</strong> by dragging them onto
